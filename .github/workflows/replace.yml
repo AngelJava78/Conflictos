@@ -1,10 +1,13 @@
 name: Replace Variables and Commit - Prod
 
 on:
-  workflow_dispatch:   # Permite ejecutarlo manualmente desde GitHub
-  push:                # Opcional: también puede ejecutarse en cada push
+  workflow_dispatch: {}   # Permite ejecutarlo manualmente desde GitHub
+  push:
     branches:
       - "qa"
+
+permissions:
+  contents: write
 
 jobs:
   replace-and-commit:
@@ -12,25 +15,81 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Translate from English to Spanish
+      # Traduce propiedades SOLO en archivos Person.cs
+      # Usamos GNU sed con límites de palabra \< \> para evitar coincidencias parciales
+      - name: Translate C# Person properties EN → ES (solo Person.cs, sin perl)
+        shell: bash
         run: |
-          $FOLDER="."
-          find "$FOLDER" -type f -name "Person.cs" -exec sed -i "s/Lastname/Apellido/g" {} +
+          set -euo pipefail
+
+          # Localiza únicamente archivos Person.cs versionados por git (respeta tus rutas relativas)
+          mapfile -t files < <(git ls-files -- 'Person.cs' '*/Person.cs')
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No se encontró Person.cs versionado por git. Nada que traducir."
+            echo "SKIP_COMMIT=true" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          changed=false
+          for f in "${files[@]}"; do
+            echo "Procesando: $f"
+
+            # Reemplazos por palabra completa (GNU sed: \< y \>)
+            # Mantener PascalCase
+            sed -i -E \
+              -e 's/\<Lastname\>/Apellido/g' \
+              -e 's/\<Name\>/Nombre/g' \
+              -e 's/\<Email\>/Correo/g' \
+              -e 's/\<Age\>/Edad/g' \
+              "$f"
+
+            # ¿Cambió el archivo?
+            if ! git diff --quiet -- "$f"; then
+              echo "Archivo modificado: $f"
+              changed=true
+            fi
+          done
+
+          if [ "$changed" = false ]; then
+            echo "No se detectaron cambios tras la traducción."
+            echo "SKIP_COMMIT=true" >> "$GITHUB_ENV"
+          fi
+
+      # (Opcional) Validar compilación si hay solución .sln en el repo
+      - name: Setup .NET
+        if: env.SKIP_COMMIT != 'true'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build solution (opcional)
+        if: env.SKIP_COMMIT != 'true'
+        shell: bash
+        run: |
+          if ls *.sln 1> /dev/null 2>&1; then
+            dotnet restore
+            dotnet build --configuration Release --no-restore
+          else
+            echo "No hay solución .sln en la raíz; omitiendo build."
+          fi
 
       - name: Configure Git
+        if: env.SKIP_COMMIT != 'true'
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
 
       - name: Commit and push changes
+        if: env.SKIP_COMMIT != 'true'
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
-            git add .
-            git commit -m "UP: Remplazo de variables del JSON config(Prod), rama ${{ github.ref_name }}"
+            git add -A
+            git commit -m "refactor: traducir propiedades de Person.cs (Lastname→Apellido, Name→Nombre, Email→Correo, Age→Edad)"
             git push origin HEAD:${{ github.ref_name }}
           else
-            echo "No se detectaron cambios, no se realiza commit."          
+            echo "No se detectaron cambios, no se realiza commit."
+          fi
