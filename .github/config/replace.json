@@ -1,0 +1,14 @@
+{
+  "directorio_raiz": "source",
+  "extensiones_permitidas": [".cs"],
+  "valores_reemplazo": {
+        "Name": "Nombre",  
+        "Lastname": "Apellidos",
+        "Email": "Correo",
+        "Age": "Edad",
+        "City": "Ciudad",
+        "Country": "Pais",
+        "BirthDate": "FechaNacimiento",
+    }
+}
+
