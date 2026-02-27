@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
 
           # Localiza únicamente archivos Person.cs versionados por git (respeta tus rutas relativas)
-          mapfile -t files < <(git ls-files -- 'Person.cs' '*/Person.cs')
+          mapfile -t files < <(git ls-files -- '*.cs')
           if [ ${#files[@]} -eq 0 ]; then
             echo "No se encontró Person.cs versionado por git. Nada que traducir."
             echo "SKIP_COMMIT=true" >> "$GITHUB_ENV"
@@ -45,6 +45,9 @@ jobs:
               -e 's/\<Name\>/Nombre/g' \
               -e 's/\<Email\>/Correo/g' \
               -e 's/\<Age\>/Edad/g' \
+              -e 's/\<City\>/Ciudad/g' \
+              -e 's/\<Country\>/Pais/g' \
+              -e 's/\<BirthDate\>/FechaNacimiento/g' \                                                        
               "$f"
 
             # ¿Cambió el archivo?
