@@ -1,0 +1,36 @@
+name: Replace Variables and Commit - Prod
+
+on:
+  workflow_dispatch:   # Permite ejecutarlo manualmente desde GitHub
+  push:                # Opcional: también puede ejecutarse en cada push
+    branches:
+      - "qa"
+
+jobs:
+  replace-and-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Translate from English to Spanish
+        run: |
+          $FOLDER="."
+          find "$FOLDER" -type f -name "Person.cs" -exec sed -i "s/Lastname/Apellido/g" {} +
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Commit and push changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add .
+            git commit -m "UP: Remplazo de variables del JSON config(Prod), rama ${{ github.ref_name }}"
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "No se detectaron cambios, no se realiza commit."          
