@@ -45,6 +45,9 @@ jobs:
               -e 's/\<Name\>/Nombre/g' \
               -e 's/\<Email\>/Correo/g' \
               -e 's/\<Age\>/Edad/g' \
+              -e 's/\<City\>/Ciudad/g' \
+              -e 's/\<Country\>/Pais/g' \
+              -e 's/\<BirthDate\>/FechaNacimiento/g' \                                                        
               "$f"
 
             # ¿Cambió el archivo?
