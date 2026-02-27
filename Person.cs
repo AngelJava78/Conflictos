@@ -1,8 +1,8 @@
 public class Person
 {
 	public long Id { get; set; }
-	public string Name { get; set; }
-	public string Lastname { get; set; }
-	public string Email { get; set; }
-    public int Age { get; set; }
+	public string Nombre { get; set; }
+	public string Apellido { get; set; }
+	public string Correo { get; set; }
+    public int Edad { get; set; }
 }
