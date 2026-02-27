@@ -6,6 +6,10 @@ on:
     branches:
       - "qa"
 
+
+permissions:
+  contents: write
+
 jobs:
   replace-and-commit:
     runs-on: ubuntu-latest
